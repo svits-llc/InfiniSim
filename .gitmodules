@@ -1,6 +1,6 @@
 [submodule "InfiniTime"]
 	path = InfiniTime
-	url = ../../InfiniTimeOrg/InfiniTime.git
+	url = https://github.com/svits-llc/InfiniTime
 [submodule "lv_drivers"]
 	path = lv_drivers
 	url = ../../lvgl/lv_drivers.git
