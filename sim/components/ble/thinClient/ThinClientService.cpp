@@ -146,10 +146,8 @@ void Pinetime::Controllers::ThinClientService::Init() {
         uint8_t buffer[CHUNK_SIZE];
         ((uint32_t*) buffer)[0] = htonl(frame.tellg());
         frame.seekg(0, std::ios_base::beg);
-        // format
-        buffer[4] = 0;
         // send header
-        state = thinClient->OnData(state, (uint8_t*) buffer, 5);
+        state = thinClient->OnData(state, (uint8_t*) buffer, 4);
 
         // send frame in chunks
 	while (frame.read((char*) buffer, sizeof(buffer))) {
