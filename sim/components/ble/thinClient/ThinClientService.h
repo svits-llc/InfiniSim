@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
 #include <thread>
 
@@ -27,6 +28,10 @@ namespace Pinetime {
 
       static constexpr uint8_t CHUNK_SIZE = 244;
 
+      void frameAck(uint8_t id);
+
+      void logWrite(std::string message);
+
     private:
       //struct ble_gatt_chr_def characteristicDefinition[14];
       //struct ble_gatt_svc_def serviceDefinition[2];
@@ -39,7 +44,9 @@ namespace Pinetime {
 
       IThinClient* thinClient = nullptr;
 
-      std::thread updateThread;
+      bool updateThreadStarted = false;
+
+      static constexpr uint16_t LOG_MAX_LENGTH = 244;
     };
 
     class IThinClient {

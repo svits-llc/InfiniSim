@@ -24,6 +24,7 @@
 
 #include "ThinClientService.h"
 #include "systemtask/SystemTask.h"
+#include "nrf_log.h"
 
 namespace {
   // 0000yyxx-78fc-48fe-8e23-433b3a1942d0
@@ -130,39 +131,48 @@ void Pinetime::Controllers::ThinClientService::Init() {
 
   //res = ble_gatts_add_svcs(serviceDefinition);
   //ASSERT(res == 0);
-
-  updateThread = std::thread([this](){
-    while (true) {
-      if (thinClient == nullptr) { std::this_thread::sleep_for(std::chrono::milliseconds(1000)); continue; }
-
-      for (int i = 0; i <= 59; i++) {
-        std::ostringstream strStream;
-        strStream << std::setw(3) << std::setfill('0') << i;
-        std::string framePath = "<path_to_folder>/" + strStream.str() + ".bin"; // filename format: 000.bin
-        std::ifstream frame(framePath, std::ifstream::ate | std::ifstream::binary);
-
-        // header
-        // payload size
-        uint8_t buffer[CHUNK_SIZE];
-        ((uint32_t*) buffer)[0] = htonl(frame.tellg());
-        frame.seekg(0, std::ios_base::beg);
-        // send header
-        state = thinClient->OnData(state, (uint8_t*) buffer, 4);
-
-        // send frame in chunks
-	while (frame.read((char*) buffer, sizeof(buffer))) {
-          state = thinClient->OnData(state, (uint8_t*) buffer, frame.gcount());
-        }
-
-        frame.close();
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-      }
-    }
-  });
 }
 
 void Pinetime::Controllers::ThinClientService::setClient(IThinClient* ptr) {
   thinClient = ptr;
+  if (!updateThreadStarted) {
+      std::thread([this](){
+          std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+          while (true) {
+              if (thinClient == nullptr) { std::this_thread::sleep_for(std::chrono::milliseconds(1000)); continue; }
+
+              for (int i = 0; i <= 59; i++) {
+                  std::ostringstream strStream;
+                  strStream << std::setw(3) << std::setfill('0') << i;
+                  std::string framePath = "../../240/bin_lz4/" + strStream.str() + ".comp"; // filename format: 000.bin
+                  std::ifstream frame(framePath, std::ifstream::ate | std::ifstream::binary);
+
+                  uint32_t fileSize = frame.tellg();
+                  // header
+                  // payload size
+                  uint8_t buffer[CHUNK_SIZE];
+                  ((uint32_t*) buffer)[0] = htonl(fileSize);
+                  frame.seekg(0, std::ios_base::beg);
+                  // packet id
+                  buffer[4] = i;
+                  // send header
+                  state = thinClient->OnData(state, (uint8_t*) buffer, 5);
+
+                  // send frame in chunks
+                  while (frame.read((char*) buffer, sizeof(buffer)))
+                      state = thinClient->OnData(state, (uint8_t*) buffer, frame.gcount());
+
+                  int lastChunk = fileSize%sizeof(buffer);
+                  if (lastChunk > 0)
+                      state = thinClient->OnData(state, (uint8_t*) buffer, frame.gcount());
+
+                  frame.close();
+                  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+              }
+          }
+      }).detach();
+      updateThreadStarted = true;
+  }
 }
 
 /*void Pinetime::Controllers::ThinClientService::SwapBytes(uint16_t* arr, uint16_t size) {
@@ -203,6 +213,17 @@ void Pinetime::Controllers::ThinClientService::setClient(IThinClient* ptr) {
 //  }
 //  return 0;
 //}
+
+void Pinetime::Controllers::ThinClientService::frameAck(uint8_t id) {
+    NRF_LOG_INFO("FrameAck:%d", id);
+}
+
+void Pinetime::Controllers::ThinClientService::logWrite(std::string message) {
+    if (message.length() > LOG_MAX_LENGTH) {
+        return;
+    }
+    NRF_LOG_INFO("%s", message.c_str());
+}
 
 void Pinetime::Controllers::ThinClientService::event(char event) {
   std::ignore = event;
