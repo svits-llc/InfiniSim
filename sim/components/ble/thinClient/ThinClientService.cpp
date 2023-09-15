@@ -138,10 +138,10 @@ void Pinetime::Controllers::ThinClientService::setClient(IThinClient* ptr) {
   if (!updateThreadStarted) {
       std::thread([this](){
           std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-          while (true) {
+          while (false) {
               if (thinClient == nullptr) { std::this_thread::sleep_for(std::chrono::milliseconds(1000)); continue; }
 
-              for (int i = 0; i <= 59; i++) {
+              for (int i = 1; i <= 120; i++) {
                   std::ostringstream strStream;
                   strStream << std::setw(3) << std::setfill('0') << i;
                   std::string framePath = "../../240/bin_lz4/" + strStream.str() + ".comp"; // filename format: 000.bin
@@ -153,7 +153,7 @@ void Pinetime::Controllers::ThinClientService::setClient(IThinClient* ptr) {
                   uint8_t buffer[CHUNK_SIZE];
                   ((uint32_t*) buffer)[0] = htonl(fileSize);
                   frame.seekg(0, std::ios_base::beg);
-                  // packet id
+                  // frame id
                   buffer[4] = i;
                   // send header
                   state = thinClient->OnData(state, (uint8_t*) buffer, 5);
@@ -167,7 +167,7 @@ void Pinetime::Controllers::ThinClientService::setClient(IThinClient* ptr) {
                       state = thinClient->OnData(state, (uint8_t*) buffer, frame.gcount());
 
                   frame.close();
-                  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                  //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
               }
           }
       }).detach();
@@ -214,8 +214,8 @@ void Pinetime::Controllers::ThinClientService::setClient(IThinClient* ptr) {
 //  return 0;
 //}
 
-void Pinetime::Controllers::ThinClientService::frameAck(uint8_t id) {
-    NRF_LOG_INFO("FrameAck:%d", id);
+void Pinetime::Controllers::ThinClientService::event(const char* data, uint16_t size) {
+    NRF_LOG_INFO("Event:%s",  std::string(data, size).c_str());
 }
 
 void Pinetime::Controllers::ThinClientService::logWrite(std::string message) {
