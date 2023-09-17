@@ -138,7 +138,7 @@ void Pinetime::Controllers::ThinClientService::setClient(IThinClient* ptr) {
   if (!updateThreadStarted) {
       std::thread([this](){
           std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-          while (false) {
+          while (true) {
               if (thinClient == nullptr) { std::this_thread::sleep_for(std::chrono::milliseconds(1000)); continue; }
 
               for (int i = 1; i <= 120; i++) {
