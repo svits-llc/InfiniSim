@@ -215,7 +215,13 @@ void Pinetime::Controllers::ThinClientService::setClient(IThinClient* ptr) {
 //}
 
 void Pinetime::Controllers::ThinClientService::event(const char* data, uint16_t size) {
-    NRF_LOG_INFO("Event:%s",  std::string(data, size).c_str());
+    char formattedString[size*10];
+    uint16_t formattedStringCnt = 0;
+    for (uint16_t i = 0; i < size; i++) {
+        formattedStringCnt +=
+                sprintf(formattedString+formattedStringCnt, " %2x", (unsigned char) data[i]);
+    }
+    NRF_LOG_INFO("Event:%s", std::string(formattedString,formattedStringCnt).c_str());
 }
 
 void Pinetime::Controllers::ThinClientService::logWrite(std::string message) {
